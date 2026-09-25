@@ -14,14 +14,21 @@ Here I rewrite the exercises myself, try variations, and keep notes as I go.
 
 ```
 CH17_LangChain/
-├─ README.md          # this file
+├─ README.md                       # this file
 └─ src/
-   └─ .venv/          # Python 3.13.14 virtual environment (git-ignored)
+   ├─ .venv/                       # Python 3.13.14 venv (git-ignored)
+   └─ chapters/
+      ├─ 001_Hello_LC.py           # done - ChatGroq, one question in, answer out
+      ├─ 002_Hello_gemini_stream.py # done - Gemini agent, token-by-token output
+      ├─ 003_Hello_gemini.py       # done - Gemini agent, single answer
+      └─ 005_Agent_Parallel_Vs_Sequential.py   # done - asyncio.gather, 4 calls at once
 ```
 
-The venv currently sits inside `src\`. The recommended layout puts it at the project
-root instead - see **Where the venv should live** below - so the steps that follow
-assume `CH17_LangChain\.venv`.
+I decided to keep the venv inside `src\` (see **Where the venv should live** below),
+so **every command in this runbook is run from `src\`**.
+
+Newest update: see **What I did - the real log** below, which records the first
+successful install and the first program I ran.
 
 Everything below is the procedure I run from a fresh clone.
 
@@ -76,26 +83,134 @@ works from anywhere in the project, it is what VS Code auto-detects when choosin
 interpreter, and it leaves room for a `pyproject.toml` at the root later (which
 expects `.venv` beside it).
 
-To move it - nothing is installed yet, so nothing is lost:
+**Decision: I kept it in `src\`.** Recreating it now would mean redoing the installs
+below (uv caches the wheels, so it is quick, but it is still extra work for a
+cosmetic gain). So the rule I follow is: **always run from `src\`**.
+
+If I ever do want to move it, uv reinstalls from cache in seconds:
 
 ```powershell
 cd D:\Projects\LangChain\CH17_LangChain
 Remove-Item -Recurse -Force src\.venv
 uv venv
+cd src
+uv pip install langchain langchain-groq langchain-google-genai python-dotenv requests
 ```
 
-If I decide to keep it in `src\`, then every `uv` command below has to be run from
-`src\`.
+---
+
+## What I did - the real log
+
+The exact sequence that got me to a working first program, with the versions it
+produced. This is the part to follow again on a new machine.
+
+### 1. Activate the venv
+
+```powershell
+cd D:\Projects\LangChain\CH17_LangChain\src
+.venv\Scripts\Activate.ps1
+```
+
+The prompt becomes `(src)`. Confirm the interpreter:
+
+```powershell
+python --version
+# Python 3.13.14
+```
+
+### 2. Check what was already installed
+
+```powershell
+uv pip list
+```
+
+Empty - a brand new venv.
+
+### 3. Install LangChain and the model providers
+
+```powershell
+uv pip install -U langchain langchain-google-genai langchain-ollama langchain-openrouter python-dotenv requests
+```
+
+```
+Resolved 54 packages in 9.93s
+Prepared 54 packages in 3.30s
+Installed 54 packages in 16.69s
+```
+
+`-U` means upgrade to the newest allowed version. What that produced:
+
+| Package | Version | What it is |
+| --- | --- | --- |
+| `langchain` | 1.4.2 | core - `create_agent`, `@tool`, structured output |
+| `langchain-core` | 1.6.5 | the base layer langchain and every provider build on |
+| `langgraph` | 1.2.12 | the agent loop, pulled in automatically by langchain |
+| `langchain-google-genai` | 4.4.0 | Gemini |
+| `langchain-ollama` | 1.1.0 | local models through Ollama |
+| `langchain-openrouter` | 0.2.9 | OpenRouter |
+| `langsmith` | 0.14.0 | tracing, pulled in automatically |
+| `pydantic` | 2.12.5 | response schemas |
+| `python-dotenv` | 1.2.3 | reads `.env` |
+| `requests` | 2.34.2 | plain HTTP calls |
+
+### 4. Install the Groq provider separately
+
+```powershell
+uv pip install -U langchain-groq
+```
+
+```
++ groq==0.37.1
++ langchain-groq==1.1.3
+- pydantic==2.12.5
++ pydantic==2.13.5
+- pydantic-core==2.41.5
++ pydantic-core==2.46.5
+- websockets==16.1.1
++ websockets==17.1
+```
+
+Worth remembering: installing one provider **also upgraded shared packages**. The
+`-` lines are what got replaced. That is normal - the resolver keeps one version per
+package for the whole environment - but it is why an environment that worked can
+change after an unrelated install.
+
+### 5. Run the first program
+
+```powershell
+python chapters/001_Hello_LC.py
+```
+
+```
+Enter the question: what is 2+2 ?
+2 + 2 = 4
+```
+
+That is the whole of chapter 001: `input()` -> `llm.invoke()` -> print. No agent, no
+tools. `src\chapters\001_Hello_LC.py` is now commented line by line.
+
+### Notes from this run
+
+- `warning: Failed to hardlink files; falling back to full copy` is **harmless**.
+  uv's cache is on a different drive from the venv, so it copies the wheels instead
+  of hard-linking them. A small speed difference, nothing more.
+- I used `python ...` rather than `uv run python ...` because the venv was already
+  activated. Both work; `uv run` also works with nothing activated.
+- `python chapters/001_Hello_LC.py` uses a forward slash - Windows accepts `/` and
+  `\` interchangeably.
+- **Not installed yet:** `playwright` and `langchain-deepseek`. Playwright is only
+  needed from chapter 009 onwards.
 
 ---
 
 ## Step 1 - Open the folder
 
 ```powershell
-cd D:\Projects\LangChain\CH17_LangChain
+cd D:\Projects\LangChain\CH17_LangChain\src
 ```
 
-I work in **this** folder, not the reference folder. The reference is read-only for me.
+I work in **this** folder, not the reference folder. The reference is read-only for
+me. Because the venv lives in `src\`, every command below is run from here.
 
 ---
 
@@ -160,14 +275,23 @@ The path must contain `CH17_LangChain\.venv`. If it does not, the venv is not ac
 
 ## Step 4 - Install LangChain and the model providers
 
-With the venv active:
+With the venv active. This is exactly what I ran, in two commands:
 
 ```powershell
-uv pip install langchain langchain-groq langchain-google-genai langchain-deepseek python-dotenv requests
+uv pip install -U langchain langchain-google-genai langchain-ollama langchain-openrouter python-dotenv requests
+uv pip install -U langchain-groq
 ```
 
 `uv pip` and not plain `pip` - a uv-created venv has no pip inside it, so
 `pip install ...` fails with *"No module named pip"*.
+
+Add these when a later exercise needs them:
+
+| Package | Needed from |
+| --- | --- |
+| `langchain-deepseek` | chapter 010 - DeepSeek driving the browser |
+| `playwright` | chapter 009 |
+| `fastembed numpy` | the optional embedding RAG in chapter 013 |
 
 What each one is for:
 
