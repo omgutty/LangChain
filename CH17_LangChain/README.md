@@ -21,7 +21,8 @@ CH17_LangChain/
       ├─ 001_Hello_LC.py           # done - ChatGroq, one question in, answer out
       ├─ 002_Hello_gemini_stream.py # done - Gemini agent, token-by-token output
       ├─ 003_Hello_gemini.py       # done - Gemini agent, single answer
-      └─ 005_Agent_Parallel_Vs_Sequential.py   # done - asyncio.gather, 4 calls at once
+      ├─ 005_Agent_Parallel_Vs_Sequential.py   # done - asyncio.gather, 4 calls at once
+      └─ 006_tool.py               # done - first custom tool, safe arithmetic eval
 ```
 
 I decided to keep the venv inside `src\` (see **Where the venv should live** below),
@@ -189,6 +190,41 @@ Enter the question: what is 2+2 ?
 That is the whole of chapter 001: `input()` -> `llm.invoke()` -> print. No agent, no
 tools. `src\chapters\001_Hello_LC.py` is now commented line by line.
 
+### 6. Install Playwright - for the browser agent (chapter 009)
+
+Two installs, and the second one is easy to forget:
+
+```powershell
+uv pip install playwright
+uv run playwright install chromium
+```
+
+```
++ greenlet==3.5.6
++ playwright==1.63.0
++ pyee==13.0.1
+
+Downloading Chrome for Testing 153.0.8010.12 (playwright chromium v1243)
+  ... 195.6 MiB
+Downloading Chrome Headless Shell 153.0.8010.12
+  ... 114.6 MiB
+```
+
+- The **package** (`playwright`) provides the Python API.
+- The **browser** (`playwright install chromium`) is a separate ~310 MiB download.
+  Without it, `p.chromium.launch()` fails with *"Executable doesn't exist"* - the
+  single most common Playwright mistake.
+- The browser lands in `C:\Users\orgutty\AppData\Local\ms-playwright\`, a user-level
+  cache, **not** in this project - so there is nothing to git-ignore.
+- It is per-machine, not per-project: any other project reuses the same download.
+
+Confirmed working - headless Chromium launches, renders and navigates:
+
+```
+browser launched OK, page says: Playwright works
+navigated OK, title: Example Domain
+```
+
 ### Notes from this run
 
 - `warning: Failed to hardlink files; falling back to full copy` is **harmless**.
@@ -198,8 +234,8 @@ tools. `src\chapters\001_Hello_LC.py` is now commented line by line.
   activated. Both work; `uv run` also works with nothing activated.
 - `python chapters/001_Hello_LC.py` uses a forward slash - Windows accepts `/` and
   `\` interchangeably.
-- **Not installed yet:** `playwright` and `langchain-deepseek`. Playwright is only
-  needed from chapter 009 onwards.
+- **Not installed yet:** `langchain-deepseek` (chapter 010) and `fastembed` +
+  `numpy` (chapter 013).
 
 ---
 
@@ -287,11 +323,11 @@ uv pip install -U langchain-groq
 
 Add these when a later exercise needs them:
 
-| Package | Needed from |
-| --- | --- |
-| `langchain-deepseek` | chapter 010 - DeepSeek driving the browser |
-| `playwright` | chapter 009 |
-| `fastembed numpy` | the optional embedding RAG in chapter 013 |
+| Package | Needed from | Status |
+| --- | --- | --- |
+| `playwright` | chapter 009 - browser automation | installed |
+| `langchain-deepseek` | chapter 010 - DeepSeek driving the browser | not yet |
+| `fastembed` + `numpy` | the optional embedding RAG in chapter 013 | not yet |
 
 What each one is for:
 
