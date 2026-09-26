@@ -22,7 +22,8 @@ CH17_LangChain/
       ├─ 002_Hello_gemini_stream.py # done - Gemini agent, token-by-token output
       ├─ 003_Hello_gemini.py       # done - Gemini agent, single answer
       ├─ 005_Agent_Parallel_Vs_Sequential.py   # done - asyncio.gather, 4 calls at once
-      └─ 006_tool.py               # done - first custom tool, safe arithmetic eval
+      ├─ 006_tool.py               # done - first custom tool, safe arithmetic eval
+      └─ 007_MultiTool.py          # done - two tools, agent picks which to call
 ```
 
 I decided to keep the venv inside `src\` (see **Where the venv should live** below),
